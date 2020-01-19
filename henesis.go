@@ -23,9 +23,13 @@ func NewHenesis(apikey, network string) (*Henesis, error) {
 	return h, nil
 }
 
-func (h Henesis) get(path string) ([]byte, error) {
+func (h Henesis) getPath(path string) ([]byte, error) {
+	return h.getURL(h.API + path)
+}
+
+func (h Henesis) getURL(url string) ([]byte, error) {
 	client := new(http.Client)
-	req, err := http.NewRequest("GET", h.API+path, nil)
+	req, err := http.NewRequest("GET", url, nil)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

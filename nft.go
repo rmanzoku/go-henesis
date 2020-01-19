@@ -26,6 +26,16 @@ type getTokensByAccountAddressInput struct {
 	ContractAddresses []string
 }
 
+func (in getTokensByAccountAddressInput) Path() string {
+	q := make(url.Values)
+	q.Set("page", strconv.Itoa(in.Page))
+	q.Set("size", strconv.Itoa(in.Size))
+	q.Set("order_by", in.OrderBy)
+	q.Set("order_direction", in.OrderDirection)
+	q.Set("contractAddresses", strings.Join(in.ContractAddresses, ","))
+	return fmt.Sprintf("/nft/v1/accounts/%s/tokens?", in.AccountAddress) + q.Encode()
+}
+
 type getTokensByAccountAddressOutput struct {
 	Data       []Datum    `json:"data"`
 	Pagination Pagination `json:"pagination"`
@@ -52,6 +62,15 @@ type Pagination struct {
 	NextURL    string `json:"nextUrl"`
 }
 
+func parseDatum(d Datum) *Token {
+	id, _ := new(big.Int).SetString(d.ID, 10)
+	return &Token{
+		ID:    id,
+		Owner: common.HexToAddress(d.Owner),
+		URI:   d.URI,
+	}
+}
+
 func (h Henesis) GetTokensByAccountAddress(accountAddress string, contractAddresses []string) (tokens []*Token, err error) {
 	in := &getTokensByAccountAddressInput{
 		AccountAddress:    accountAddress,
@@ -61,33 +80,34 @@ func (h Henesis) GetTokensByAccountAddress(accountAddress string, contractAddres
 		OrderDirection:    "desc",
 		ContractAddresses: contractAddresses,
 	}
-	out, err := h.getTokensByAccountAddress(in)
-	if err != nil {
-		return
-	}
 
-	tokens = make([]*Token, out.Pagination.TotalCount)
-	for i, d := range out.Data {
-		id, _ := new(big.Int).SetString(d.ID, 10)
-		tokens[i] = &Token{
-			ID:    id,
-			Owner: common.HexToAddress(d.Owner),
-			URI:   d.URI,
+	next := h.API + in.Path()
+	i := 0
+	if next != "" {
+		b, err := h.getURL(next)
+		if err != nil {
+			return nil, err
 		}
+		out := new(getTokensByAccountAddressOutput)
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(b, out)
+		if err != nil {
+			return nil, err
+		}
+
+		if tokens == nil {
+			tokens = make([]*Token, out.Pagination.TotalCount)
+		}
+
+		for _, d := range out.Data {
+			tokens[i] = parseDatum(d)
+			i++
+		}
+
+		next = out.Pagination.NextURL
 	}
 
 	return tokens, nil
-}
-
-func (h Henesis) getTokensByAccountAddress(in *getTokensByAccountAddressInput) (out *getTokensByAccountAddressOutput, err error) {
-	q := make(url.Values)
-	q.Set("page", strconv.Itoa(in.Page))
-	q.Set("size", strconv.Itoa(in.Size))
-	q.Set("order_by", in.OrderBy)
-	q.Set("order_direction", in.OrderDirection)
-	q.Set("contractAddresses", strings.Join(in.ContractAddresses, ","))
-	path := fmt.Sprintf("/nft/v1/accounts/%s/tokens?", in.AccountAddress) + q.Encode()
-	b, err := h.get(path)
-	out = new(getTokensByAccountAddressOutput)
-	return out, json.Unmarshal(b, out)
 }
