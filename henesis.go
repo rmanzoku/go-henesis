@@ -15,6 +15,21 @@ type Henesis struct {
 	Network string
 }
 
+type Token struct {
+	ID       string   `json:"id"`
+	Owner    string   `json:"owner"`
+	URI      string   `json:"uri"`
+	Contract Contract `json:"contract"`
+}
+
+type Contract struct {
+	Address     string `json:"address"`
+	Name        string `json:"name"`
+	Symbol      string `json:"symbol"`
+	Owners      string `json:"owners"`
+	TotalSupply string `json:"totalSupply"`
+}
+
 func NewHenesis(apikey, network string) (*Henesis, error) {
 	h := &Henesis{
 		API:     API,

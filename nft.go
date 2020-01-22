@@ -3,58 +3,10 @@ package henesis
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"net/url"
 	"strconv"
 	"strings"
-
-	"github.com/ethereum/go-ethereum/common"
 )
-
-type Token struct {
-	ID    *big.Int       `json:"id"`
-	Owner common.Address `json:"owner"`
-	URI   string         `json:"uri"`
-}
-
-type getTokensByAccountAddressInput struct {
-	AccountAddress    string
-	Page              int
-	Size              int
-	OrderBy           string
-	OrderDirection    string
-	ContractAddresses []string
-}
-
-func (in getTokensByAccountAddressInput) Path() string {
-	q := make(url.Values)
-	q.Set("page", strconv.Itoa(in.Page))
-	q.Set("size", strconv.Itoa(in.Size))
-	q.Set("order_by", in.OrderBy)
-	q.Set("order_direction", in.OrderDirection)
-	q.Set("contractAddresses", strings.Join(in.ContractAddresses, ","))
-	return fmt.Sprintf("/nft/v1/accounts/%s/tokens?", in.AccountAddress) + q.Encode()
-}
-
-type getTokensByAccountAddressOutput struct {
-	Data       []Datum    `json:"data"`
-	Pagination Pagination `json:"pagination"`
-}
-
-type Datum struct {
-	ID       string   `json:"id"`
-	Owner    string   `json:"owner"`
-	URI      string   `json:"uri"`
-	Contract Contract `json:"contract"`
-}
-
-type Contract struct {
-	Address     string      `json:"address"`
-	Name        string      `json:"name"`
-	Symbol      string      `json:"symbol"`
-	Owners      interface{} `json:"owners"`
-	TotalSupply string      `json:"totalSupply"`
-}
 
 type Pagination struct {
 	TotalCount int64  `json:"totalCount"`
@@ -62,22 +14,67 @@ type Pagination struct {
 	NextURL    string `json:"nextUrl"`
 }
 
-func parseDatum(d Datum) *Token {
-	id, _ := new(big.Int).SetString(d.ID, 10)
-	return &Token{
-		ID:    id,
-		Owner: common.HexToAddress(d.Owner),
-		URI:   d.URI,
+type queries struct {
+	Page           int
+	Size           int
+	OrderBy        string
+	OrderDirection string
+}
+
+func (q queries) Encode() string {
+	v := make(url.Values)
+	v.Set("page", strconv.Itoa(q.Page))
+	v.Set("size", strconv.Itoa(q.Size))
+	v.Set("order_by", q.OrderBy)
+	v.Set("order_direction", q.OrderDirection)
+	return v.Encode()
+}
+
+func (h Henesis) GetContract(contractAddress string) (contract *Contract, err error) {
+	path := fmt.Sprintf("/nft/v1/contracts/%s", contractAddress)
+	b, err := h.getPath(path)
+	if err != nil {
+		return
 	}
+	contract = new(Contract)
+	return contract, json.Unmarshal(b, contract)
+}
+
+func (h Henesis) GetAllContracts() (contracts []*Contract, err error) {
+	path := fmt.Sprintf("/nft/v1/contracts/")
+	b, err := h.getPath(path)
+	if err != nil {
+		return
+	}
+	contracts = []*Contract{}
+	return contracts, json.Unmarshal(b, &contracts)
+}
+
+type getTokensByAccountAddressInput struct {
+	queries
+	AccountAddress    string
+	ContractAddresses []string
+}
+
+func (in getTokensByAccountAddressInput) Path() string {
+	contracts := "&contractAddresses=" + strings.Join(in.ContractAddresses, ",")
+	return fmt.Sprintf("/nft/v1/accounts/%s/tokens?", in.AccountAddress) + in.queries.Encode() + contracts
+}
+
+type getTokensByAccountAddressOutput struct {
+	Tokens     []*Token    `json:"data"`
+	Pagination *Pagination `json:"pagination"`
 }
 
 func (h Henesis) GetTokensByAccountAddress(accountAddress string, contractAddresses []string) (tokens []*Token, err error) {
 	in := &getTokensByAccountAddressInput{
-		AccountAddress:    accountAddress,
-		Page:              0,
-		Size:              200,
-		OrderBy:           "transfer_block_number",
-		OrderDirection:    "desc",
+		AccountAddress: accountAddress,
+		queries: queries{
+			Page:           0,
+			Size:           200,
+			OrderBy:        "transfer_block_number",
+			OrderDirection: "desc",
+		},
 		ContractAddresses: contractAddresses,
 	}
 
@@ -101,8 +98,8 @@ func (h Henesis) GetTokensByAccountAddress(accountAddress string, contractAddres
 			tokens = make([]*Token, out.Pagination.TotalCount)
 		}
 
-		for _, d := range out.Data {
-			tokens[i] = parseDatum(d)
+		for _, d := range out.Tokens {
+			tokens[i] = d
 			i++
 		}
 
