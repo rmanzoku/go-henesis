@@ -80,6 +80,7 @@ func (h Henesis) GetTokensByAccountAddress(accountAddress string, contractAddres
 
 	next := h.API + in.Path()
 	i := 0
+	init := true
 	if next != "" {
 		b, err := h.getURL(next)
 		if err != nil {
@@ -94,8 +95,9 @@ func (h Henesis) GetTokensByAccountAddress(accountAddress string, contractAddres
 			return nil, err
 		}
 
-		if len(tokens) == 0 {
+		if init {
 			tokens = make([]*Token, out.Pagination.TotalCount)
+			init = false
 		}
 
 		for _, d := range out.Tokens {

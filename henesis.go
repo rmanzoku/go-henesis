@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	MainnetAPI = "https://eth-mainnet.api.henesis.io/"
-	RinkebyAPI = "https://eth-rinkeby.api.henesis.io/"
+	MainnetAPI = "https://eth-mainnet.api.henesis.io"
+	RinkebyAPI = "https://eth-rinkeby.api.henesis.io"
 )
 
 type Henesis struct {
@@ -59,6 +59,7 @@ func (h Henesis) getURL(url string) ([]byte, error) {
 	} else {
 		url = url + "?clientId=" + h.ClientID
 	}
+
 	req, err := http.NewRequest("GET", url, nil)
 	resp, err := client.Do(req)
 	if err != nil {
