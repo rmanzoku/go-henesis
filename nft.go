@@ -94,7 +94,7 @@ func (h Henesis) GetTokensByAccountAddress(accountAddress string, contractAddres
 			return nil, err
 		}
 
-		if tokens == nil {
+		if len(tokens) == 0 {
 			tokens = make([]*Token, out.Pagination.TotalCount)
 		}
 
