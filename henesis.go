@@ -1,6 +1,7 @@
 package henesis
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -70,6 +71,9 @@ func (h Henesis) getURL(url string) ([]byte, error) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+	if string(body)[0:9] == "{\"error\":" {
+		return nil, errors.New(string(body))
 	}
 
 	if resp.StatusCode != http.StatusOK {
