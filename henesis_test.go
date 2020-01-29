@@ -3,6 +3,7 @@ package henesis
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 
@@ -17,7 +18,7 @@ func initializeTest(t *testing.T) is.I {
 	is := is.New(t)
 	var err error
 
-	h, err = NewHenesis("", "mainnet")
+	h, err = NewHenesis(os.Getenv("CLIENT_ID"))
 	is.Nil(err)
 	return is
 }

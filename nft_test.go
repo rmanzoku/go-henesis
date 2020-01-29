@@ -22,7 +22,7 @@ func TestGetAllContracts(t *testing.T) {
 	var err error
 	c, err := h.GetAllContracts()
 	is.Nil(err)
-	print(c[0])
+	print(*c[0])
 }
 
 func TestGetTokensByAccountAddress(t *testing.T) {

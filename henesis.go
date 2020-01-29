@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 var (
-	API = "http://api.henesis.io/"
+	MainnetAPI = "https://eth-mainnet.api.henesis.io/"
+	RinkebyAPI = "https://eth-rinkeby.api.henesis.io/"
 )
 
 type Henesis struct {
-	API     string
-	Network string
+	API      string
+	ClientID string
 }
 
 type Token struct {
@@ -30,10 +32,18 @@ type Contract struct {
 	TotalSupply string `json:"totalSupply"`
 }
 
-func NewHenesis(apikey, network string) (*Henesis, error) {
+func NewHenesis(clientID string) (*Henesis, error) {
 	h := &Henesis{
-		API:     API,
-		Network: network,
+		API:      MainnetAPI,
+		ClientID: clientID,
+	}
+	return h, nil
+}
+
+func NewHenesisRinkeby(clientID string) (*Henesis, error) {
+	h := &Henesis{
+		API:      RinkebyAPI,
+		ClientID: clientID,
 	}
 	return h, nil
 }
@@ -44,6 +54,11 @@ func (h Henesis) getPath(path string) ([]byte, error) {
 
 func (h Henesis) getURL(url string) ([]byte, error) {
 	client := new(http.Client)
+	if strings.Contains(url, "?") {
+		url = url + "&clientId=" + h.ClientID
+	} else {
+		url = url + "?clientId=" + h.ClientID
+	}
 	req, err := http.NewRequest("GET", url, nil)
 	resp, err := client.Do(req)
 	if err != nil {
