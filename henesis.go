@@ -1,7 +1,7 @@
 package henesis
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -31,6 +31,7 @@ type Contract struct {
 	Symbol      string `json:"symbol"`
 	Owners      string `json:"owners"`
 	TotalSupply string `json:"totalSupply"`
+	TokenCount  uint64 `json:"tokenCount"`
 }
 
 func NewHenesis(clientID string) (*Henesis, error) {
@@ -49,6 +50,19 @@ func NewHenesisRinkeby(clientID string) (*Henesis, error) {
 	return h, nil
 }
 
+type errorResponse struct {
+	Body errorBody `json:"error"`
+}
+
+func (e errorResponse) Error() error {
+	return fmt.Errorf("henesis: status %d %s", e.Body.Status, e.Body.Message)
+}
+
+type errorBody struct {
+	Message string
+	Status  int
+}
+
 func (h Henesis) getPath(path string) ([]byte, error) {
 	return h.getURL(h.API + path)
 }
@@ -60,7 +74,7 @@ func (h Henesis) getURL(url string) ([]byte, error) {
 	} else {
 		url = url + "?clientId=" + h.ClientID
 	}
-
+	fmt.Println(url)
 	req, err := http.NewRequest("GET", url, nil)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -73,7 +87,11 @@ func (h Henesis) getURL(url string) ([]byte, error) {
 		return nil, err
 	}
 	if string(body)[0:9] == "{\"error\":" {
-		return nil, errors.New(string(body))
+		err := new(errorResponse)
+		if err2 := json.Unmarshal(body, err); err2 != nil {
+			return nil, err2
+		}
+		return nil, err.Error()
 	}
 
 	if resp.StatusCode != http.StatusOK {
