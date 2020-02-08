@@ -50,6 +50,20 @@ func (h Henesis) GetAllContracts() (contracts []*Contract, err error) {
 	return contracts, json.Unmarshal(b, &contracts)
 }
 
+type getContractsByAccountAddresssOutput struct {
+	Contracts []*Contract `json:"data"`
+}
+
+func (h Henesis) GetContractsByAccountAddresss(accountAddress string) (contracts []*Contract, err error) {
+	path := fmt.Sprintf("/nft/v1/accounts/%s/contracts", accountAddress)
+	b, err := h.getPath(path)
+	if err != nil {
+		return
+	}
+	o := new(getContractsByAccountAddresssOutput)
+	return o.Contracts, json.Unmarshal(b, o)
+}
+
 type getTokensByAccountAddressInput struct {
 	queries
 	AccountAddress    string

@@ -25,6 +25,14 @@ func TestGetAllContracts(t *testing.T) {
 	print(*c[0])
 }
 
+func TestGetContractsByAccountAddresss(t *testing.T) {
+	is := initializeTest(t)
+	var err error
+	c, err := h.GetContractsByAccountAddresss(owner)
+	is.Nil(err)
+	print(*c[0])
+}
+
 func TestGetTokensByAccountAddress(t *testing.T) {
 	is := initializeTest(t)
 	var err error
