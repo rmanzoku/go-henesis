@@ -50,17 +50,15 @@ func (h Henesis) GetAllContracts() (contracts []*Contract, err error) {
 	return contracts, json.Unmarshal(b, &contracts)
 }
 
-type getContractsByAccountAddresssOutput struct {
-	Contracts []*Contract `json:"data"`
-}
-
 func (h Henesis) GetContractsByAccountAddresss(accountAddress string) (contracts []*Contract, err error) {
 	path := fmt.Sprintf("/nft/v1/accounts/%s/contracts", accountAddress)
 	b, err := h.getPath(path)
 	if err != nil {
 		return
 	}
-	o := new(getContractsByAccountAddresssOutput)
+	o := &struct {
+		Contracts []*Contract `json:"data"`
+	}{}
 	return o.Contracts, json.Unmarshal(b, o)
 }
 
@@ -73,11 +71,6 @@ type getTokensByAccountAddressInput struct {
 func (in getTokensByAccountAddressInput) Path() string {
 	contracts := "&contractAddresses=" + strings.Join(in.ContractAddresses, ",")
 	return fmt.Sprintf("/nft/v1/accounts/%s/tokens?", in.AccountAddress) + in.queries.Encode() + contracts
-}
-
-type getTokensByAccountAddressOutput struct {
-	Tokens     []*Token    `json:"data"`
-	Pagination *Pagination `json:"pagination"`
 }
 
 func (h Henesis) GetTokensByAccountAddress(accountAddress string, contractAddresses []string) (tokens []*Token, err error) {
@@ -100,7 +93,10 @@ func (h Henesis) GetTokensByAccountAddress(accountAddress string, contractAddres
 		if err != nil {
 			return nil, err
 		}
-		out := new(getTokensByAccountAddressOutput)
+		out := &struct {
+			Tokens     []*Token    `json:"data"`
+			Pagination *Pagination `json:"pagination"`
+		}{}
 		if err != nil {
 			return nil, err
 		}

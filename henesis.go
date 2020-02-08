@@ -26,12 +26,12 @@ type Token struct {
 }
 
 type Contract struct {
-	Address     string `json:"address"`
-	Name        string `json:"name"`
-	Symbol      string `json:"symbol"`
-	Owners      string `json:"owners"`
-	TotalSupply string `json:"totalSupply"`
-	TokenCount  uint64 `json:"tokenCount"`
+	Address             string `json:"address"`
+	Name                string `json:"name"`
+	Symbol              string `json:"symbol"`
+	Owners              string `json:"owners"`
+	TotalSupply         string `json:"totalSupply"`
+	TokenCountByAccount uint64 `json:"tokenCountByAccount,omitempty"`
 }
 
 func NewHenesis(clientID string) (*Henesis, error) {
@@ -51,7 +51,7 @@ func NewHenesisRinkeby(clientID string) (*Henesis, error) {
 }
 
 type errorResponse struct {
-	Body errorBody `json:"error"`
+	Body *errorBody `json:"error"`
 }
 
 func (e errorResponse) Error() error {
@@ -59,8 +59,8 @@ func (e errorResponse) Error() error {
 }
 
 type errorBody struct {
-	Message string
-	Status  int
+	Message string `json:"message"`
+	Status  int    `json:"code"`
 }
 
 func (h Henesis) getPath(path string) ([]byte, error) {
@@ -74,7 +74,7 @@ func (h Henesis) getURL(url string) ([]byte, error) {
 	} else {
 		url = url + "?clientId=" + h.ClientID
 	}
-	fmt.Println(url)
+	// fmt.Println(url)
 	req, err := http.NewRequest("GET", url, nil)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -86,16 +86,20 @@ func (h Henesis) getURL(url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if string(body)[0:9] == "{\"error\":" {
-		err := new(errorResponse)
-		if err2 := json.Unmarshal(body, err); err2 != nil {
-			return nil, err2
-		}
-		return nil, err.Error()
-	}
-
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Backend returns status %d msg: %s", resp.StatusCode, string(body))
+	}
+
+	// If it returns array, not an error
+	if string(body[0]) != "[" {
+		e := new(errorResponse)
+		err = json.Unmarshal(body, e)
+		if err != nil {
+			return nil, err
+		}
+		if e.Body != nil {
+			return nil, e.Error()
+		}
 	}
 
 	return body, nil
