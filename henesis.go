@@ -24,10 +24,16 @@ type Henesis struct {
 }
 
 type Token struct {
-	ID       string   `json:"id"`
-	Owner    string   `json:"owner"`
-	URI      string   `json:"uri"`
-	Contract Contract `json:"contract"`
+	ID              string    `json:"id"`
+	Owner           string    `json:"owner"`
+	URI             string    `json:"uri"`
+	Contract        *Contract `json:"contract"`
+	ContractAddress string    `json:"contractAddress"`
+}
+
+type Owner struct {
+	Address    string `json:"address"`
+	TokenCount int64  `json:"tokenCount"`
 }
 
 type Contract struct {
@@ -65,8 +71,8 @@ type errorResponse struct {
 	Body *errorBody `json:"error"`
 }
 
-func (e errorResponse) Error() error {
-	return fmt.Errorf("henesis: status %d %s", e.Body.Status, e.Body.Message)
+func (e errorResponse) Error() string {
+	return e.Body.Message
 }
 
 type errorBody struct {
@@ -109,7 +115,7 @@ func (h Henesis) getURL(ctx context.Context, url string) ([]byte, error) {
 			return nil, err
 		}
 		if e.Body != nil {
-			return nil, e.Error()
+			return nil, e
 		}
 	}
 
