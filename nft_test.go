@@ -52,3 +52,25 @@ func TestGetTokensByAccountAddress(t *testing.T) {
 		// print(*m)
 	}
 }
+
+func TestGetOwnersByContractAddress(t *testing.T) {
+	is := initializeTest(t)
+	var err error
+	ret, err := h.GetOwnersByContractAddress(contract)
+	is.Nil(err)
+	print(len(ret))
+	if len(ret) != 0 {
+		print(*ret[0])
+	}
+}
+
+func TestGetTokensByContractAddress(t *testing.T) {
+	is := initializeTest(t)
+	var err error
+	ret, err := h.GetTokensByContractAddress(contract)
+	is.Nil(err)
+	print(len(ret))
+	if len(ret) != 0 {
+		print(*ret[0])
+	}
+}

@@ -78,35 +78,21 @@ func (h Henesis) GetContractsByAccountAddresssWithContext(ctx context.Context, a
 	return o.Contracts, json.Unmarshal(b, o)
 }
 
-type getTokensByAccountAddressInput struct {
-	queries
-	AccountAddress    string
-	ContractAddresses []string
-}
-
-func (in getTokensByAccountAddressInput) Path() string {
-	contracts := "&contractAddresses=" + strings.Join(in.ContractAddresses, ",")
-	return fmt.Sprintf("/nft/v1/accounts/%s/tokens?", in.AccountAddress) + in.queries.Encode() + contracts
-}
-
 func (h Henesis) GetTokensByAccountAddress(accountAddress string, contractAddresses []string) (tokens []*Token, err error) {
 	ctx := context.TODO()
 	return h.GetTokensByAccountAddressWithContext(ctx, accountAddress, contractAddresses)
 }
 
 func (h Henesis) GetTokensByAccountAddressWithContext(ctx context.Context, accountAddress string, contractAddresses []string) (tokens []*Token, err error) {
-	in := &getTokensByAccountAddressInput{
-		AccountAddress: accountAddress,
-		queries: queries{
-			Page:           0,
-			Size:           200,
-			OrderBy:        "transfer_block_number",
-			OrderDirection: "desc",
-		},
-		ContractAddresses: contractAddresses,
+	q := queries{
+		Page:           0,
+		Size:           200,
+		OrderBy:        "transfer_block_number",
+		OrderDirection: "desc",
 	}
-
-	next := h.API + in.Path()
+	contracts := "&contractAddresses=" + strings.Join(contractAddresses, ",")
+	path := fmt.Sprintf("/nft/v1/accounts/%s/tokens?", accountAddress) + q.Encode() + contracts
+	next := h.API + path
 	i := 0
 	init := true
 	if next != "" {
@@ -133,6 +119,7 @@ func (h Henesis) GetTokensByAccountAddressWithContext(ctx context.Context, accou
 
 		for _, d := range out.Tokens {
 			tokens[i] = d
+			tokens[i].ContractAddress = d.Contract.Address
 			i++
 		}
 
@@ -140,4 +127,114 @@ func (h Henesis) GetTokensByAccountAddressWithContext(ctx context.Context, accou
 	}
 
 	return tokens, nil
+}
+
+func (h Henesis) GetOwnersByContractAddress(contractAddress string) (owners []*Owner, err error) {
+	ctx := context.TODO()
+	return h.GetOwnersByContractAddressWithContext(ctx, contractAddress)
+}
+
+func (h Henesis) GetOwnersByContractAddressWithContext(ctx context.Context, contractAddress string) (owners []*Owner, error error) {
+	q := queries{
+		Page:           0,
+		Size:           200,
+		OrderBy:        "token_count",
+		OrderDirection: "desc",
+	}
+	path := fmt.Sprintf("/nft/v1/contracts/%s/owners?", contractAddress) + q.Encode()
+	next := h.API + path
+	i := 0
+	init := true
+	if next != "" {
+		b, err := h.getURL(ctx, next)
+		if err != nil {
+			return nil, err
+		}
+		out := &struct {
+			Owners     []*Owner    `json:"data"`
+			Pagination *Pagination `json:"pagination"`
+		}{}
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(b, out)
+		if err != nil {
+			return nil, err
+		}
+
+		if init {
+			owners = make([]*Owner, out.Pagination.TotalCount)
+			init = false
+		}
+
+		for _, d := range out.Owners {
+			owners[i] = d
+			i++
+		}
+
+		next = out.Pagination.NextURL
+	}
+
+	return
+}
+
+func (h Henesis) GetTokensByContractAddress(contractAddress string) (tokens []*Token, err error) {
+	ctx := context.TODO()
+	return h.GetTokensByContractAddressWithContext(ctx, contractAddress)
+}
+
+func (h Henesis) GetTokensByContractAddressWithContext(ctx context.Context, contractAddress string) (tokens []*Token, error error) {
+	q := queries{
+		Page:           0,
+		Size:           200,
+		OrderBy:        "transfer_block_number",
+		OrderDirection: "desc",
+	}
+	path := fmt.Sprintf("/nft/v1/contracts/%s/tokens?", contractAddress) + q.Encode()
+	next := h.API + path
+	i := 0
+	init := true
+	if next != "" {
+		b, err := h.getURL(ctx, next)
+		if err != nil {
+			return nil, err
+		}
+		out := &struct {
+			Data struct {
+				Address     string   `json:"address"`
+				Name        string   `json:"name"`
+				Symbol      string   `json:"symbol"`
+				TotalSupply string   `json:"totalSupply"`
+				Tokens      []*Token `json:"tokens"`
+			}
+			Pagination *Pagination `json:"pagination"`
+		}{}
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(b, out)
+		if err != nil {
+			return nil, err
+		}
+
+		if init {
+			tokens = make([]*Token, out.Pagination.TotalCount)
+			init = false
+		}
+
+		for _, d := range out.Data.Tokens {
+			tokens[i] = d
+			tokens[i].Contract = &Contract{
+				Address:     out.Data.Address,
+				Name:        out.Data.Name,
+				Symbol:      out.Data.Symbol,
+				TotalSupply: out.Data.TotalSupply,
+			}
+			i++
+		}
+
+		next = out.Pagination.NextURL
+	}
+
+	return
 }
