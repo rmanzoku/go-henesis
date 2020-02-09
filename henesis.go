@@ -14,6 +14,7 @@ var (
 )
 
 type Henesis struct {
+	Network  string
 	API      string
 	ClientID string
 }
@@ -36,6 +37,7 @@ type Contract struct {
 
 func NewHenesis(clientID string) (*Henesis, error) {
 	h := &Henesis{
+		Network:  "mainnet",
 		API:      MainnetAPI,
 		ClientID: clientID,
 	}
@@ -44,10 +46,15 @@ func NewHenesis(clientID string) (*Henesis, error) {
 
 func NewHenesisRinkeby(clientID string) (*Henesis, error) {
 	h := &Henesis{
+		Network:  "rinkeby",
 		API:      RinkebyAPI,
 		ClientID: clientID,
 	}
 	return h, nil
+}
+
+func (h Henesis) TrustedNodeRPC() string {
+	return "https://tn.henesis.io/ethereum/" + h.Network + "?clientId=" + h.ClientID
 }
 
 type errorResponse struct {
