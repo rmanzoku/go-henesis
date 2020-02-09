@@ -1,6 +1,7 @@
 package henesis
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -31,8 +32,13 @@ func (q queries) Encode() string {
 }
 
 func (h Henesis) GetContract(contractAddress string) (contract *Contract, err error) {
+	ctx := context.TODO()
+	return h.GetContractWithContext(ctx, contractAddress)
+}
+
+func (h Henesis) GetContractWithContext(ctx context.Context, contractAddress string) (contract *Contract, err error) {
 	path := fmt.Sprintf("/nft/v1/contracts/%s", contractAddress)
-	b, err := h.getPath(path)
+	b, err := h.getPath(ctx, path)
 	if err != nil {
 		return
 	}
@@ -41,8 +47,13 @@ func (h Henesis) GetContract(contractAddress string) (contract *Contract, err er
 }
 
 func (h Henesis) GetAllContracts() (contracts []*Contract, err error) {
+	ctx := context.TODO()
+	return h.GetAllContractsWithContext(ctx)
+}
+
+func (h Henesis) GetAllContractsWithContext(ctx context.Context) (contracts []*Contract, err error) {
 	path := fmt.Sprintf("/nft/v1/contracts/")
-	b, err := h.getPath(path)
+	b, err := h.getPath(ctx, path)
 	if err != nil {
 		return
 	}
@@ -51,8 +62,13 @@ func (h Henesis) GetAllContracts() (contracts []*Contract, err error) {
 }
 
 func (h Henesis) GetContractsByAccountAddresss(accountAddress string) (contracts []*Contract, err error) {
+	ctx := context.TODO()
+	return h.GetContractsByAccountAddresssWithContext(ctx, accountAddress)
+}
+
+func (h Henesis) GetContractsByAccountAddresssWithContext(ctx context.Context, accountAddress string) (contracts []*Contract, err error) {
 	path := fmt.Sprintf("/nft/v1/accounts/%s/contracts", accountAddress)
-	b, err := h.getPath(path)
+	b, err := h.getPath(ctx, path)
 	if err != nil {
 		return
 	}
@@ -74,6 +90,11 @@ func (in getTokensByAccountAddressInput) Path() string {
 }
 
 func (h Henesis) GetTokensByAccountAddress(accountAddress string, contractAddresses []string) (tokens []*Token, err error) {
+	ctx := context.TODO()
+	return h.GetTokensByAccountAddressWithContext(ctx, accountAddress, contractAddresses)
+}
+
+func (h Henesis) GetTokensByAccountAddressWithContext(ctx context.Context, accountAddress string, contractAddresses []string) (tokens []*Token, err error) {
 	in := &getTokensByAccountAddressInput{
 		AccountAddress: accountAddress,
 		queries: queries{
@@ -89,7 +110,7 @@ func (h Henesis) GetTokensByAccountAddress(accountAddress string, contractAddres
 	i := 0
 	init := true
 	if next != "" {
-		b, err := h.getURL(next)
+		b, err := h.getURL(ctx, next)
 		if err != nil {
 			return nil, err
 		}
