@@ -5,7 +5,8 @@ import (
 )
 
 var (
-	owner    = "0xd868711BD9a2C6F1548F5f4737f71DA67d821090"
+	owner = "0xd868711BD9a2C6F1548F5f4737f71DA67d821090"
+	// owner    = "0xd868711BD9a2C6F1548F5f4737f71DA67d821091"
 	contract = "0xdceaf1652a131f32a821468dc03a92df0edd86ea"
 )
 
@@ -30,7 +31,9 @@ func TestGetContractsByAccountAddresss(t *testing.T) {
 	var err error
 	c, err := h.GetContractsByAccountAddresss(owner)
 	is.Nil(err)
-	print(*c[0])
+	if len(c) != 0 {
+		print(*c[0])
+	}
 }
 
 func TestGetTokensByAccountAddress(t *testing.T) {
@@ -41,9 +44,11 @@ func TestGetTokensByAccountAddress(t *testing.T) {
 		[]string{contract},
 	)
 	is.Nil(err)
-	tk := *tokens[0]
-	print(tk)
-	// m, err := erc721metadata.FetchERC721Metadata(tk.URI)
-	// is.Nil(err)
-	// print(*m)
+	if len(tokens) != 0 {
+		tk := *tokens[0]
+		print(tk)
+		// m, err := erc721metadata.FetchERC721Metadata(tk.URI)
+		// is.Nil(err)
+		// print(*m)
+	}
 }
