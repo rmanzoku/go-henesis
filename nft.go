@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Pagination struct {
@@ -29,6 +30,45 @@ func (q queries) Encode() string {
 	v.Set("order_by", q.OrderBy)
 	v.Set("order_direction", q.OrderDirection)
 	return v.Encode()
+}
+
+type Date string
+
+func ParseDate(year int, month time.Month, day int) Date {
+	return ParseDateFromInt(year, int(month), day)
+}
+
+func ParseDateFromInt(year int, month int, day int) Date {
+	return Date(fmt.Sprintf("%d-%02d-%02d", year, month, day))
+}
+
+func (d Date) String() string {
+	return string(d)
+}
+
+type Usage struct {
+	Count int64 `json:"count"`
+	Date  Date  `json:"date"`
+}
+
+func (h Henesis) NFTUsage(start Date, end Date) (usages []*Usage, err error) {
+	v := make(url.Values)
+	v.Set("start", start.String())
+	v.Set("end", end.String())
+	v.Set("page", "0")
+	v.Set("size", "31")
+	v.Set("orderBy", "date")
+	v.Set("orderDirection", "desc")
+
+	ctx := context.TODO()
+	b, err := h.getPath(ctx, "/nft/v1/stats/jsonRpcDailyStats?"+v.Encode())
+	if err != nil {
+		return
+	}
+	o := &struct {
+		Usages []*Usage `json:"data"`
+	}{}
+	return o.Usages, json.Unmarshal(b, o)
 }
 
 func (h Henesis) GetContract(contractAddress string) (contract *Contract, err error) {

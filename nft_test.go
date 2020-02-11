@@ -10,6 +10,17 @@ var (
 	contract = "0xdceaf1652a131f32a821468dc03a92df0edd86ea"
 )
 
+func TestNFTUsage(t *testing.T) {
+	is := initializeTest(t)
+	var err error
+
+	start := ParseDateFromInt(2020, 2, 1)
+	end := ParseDateFromInt(2020, 2, 10)
+	ret, err := h.NFTUsage(start, end)
+	is.Nil(err)
+	print(*ret[0])
+}
+
 func TestGetContract(t *testing.T) {
 	is := initializeTest(t)
 	var err error
